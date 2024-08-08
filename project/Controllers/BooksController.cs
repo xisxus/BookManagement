@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using project.Models.Data;
 using project.Models;
+using Microsoft.AspNetCore.Identity;
+using project.Models.ViewModels;
 
 namespace project.Controllers
 {
@@ -10,11 +12,13 @@ namespace project.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public BooksController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
+        public BooksController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
@@ -72,7 +76,7 @@ namespace project.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Author,Genre,PublishedDate")] Book book, IFormFile photo)
         {
-            if (id != book.Id)
+            if (id != book.BookId)
             {
                 return NotFound();
             }
@@ -100,7 +104,7 @@ namespace project.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!BookExists(book.Id))
+                    if (!BookExists(book.BookId))
                     {
                         return NotFound();
                     }
@@ -122,7 +126,7 @@ namespace project.Controllers
             }
 
             var book = await _context.Books
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.BookId == id);
             if (book == null)
             {
                 return NotFound();
@@ -139,7 +143,7 @@ namespace project.Controllers
             }
 
             var book = await _context.Books
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.BookId == id);
             if (book == null)
             {
                 return NotFound();
@@ -160,8 +164,74 @@ namespace project.Controllers
 
         private bool BookExists(int id)
         {
-            return _context.Books.Any(e => e.Id == id);
+            return _context.Books.Any(e => e.BookId == id);
         }
+
+        public IActionResult ReviewRating(int bookId)
+        {
+            var book = _context.Books
+                .Include(b => b.Reviews)
+                .ThenInclude(r => r.User)  // Make sure User is included
+                .FirstOrDefault(b => b.BookId == bookId);
+
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            return View(book);
+        }
+
+
+        [HttpPost]
+        public IActionResult SubmitReview(int bookId, int rating, string comment)
+        {
+            var book = _context.Books.FirstOrDefault(b => b.BookId == bookId);
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            var userId = _userManager.GetUserId(User);  // Get the current user's ID
+
+            var review = new Review
+            {
+                BookId = bookId,
+                UserId = userId,
+                Rating = rating,
+                Comment = comment,
+                DatePosted = DateTime.Now
+            };
+
+            _context.Reviews.Add(review);
+            _context.SaveChanges();
+
+            return RedirectToAction("ReviewRating", new { bookId = bookId });
+        }
+
+        public IActionResult BookShowcase()
+        {
+            var books = _context.Books
+                .Include(b => b.Reviews)  // Include reviews
+                .ToList();  // Fetch all books into memory
+
+            var booksWithRatings = books
+                .Select(b => new BookViewModel
+                {
+                    Book = b,
+                    AverageRating = b.Reviews.Any() ? b.Reviews.Average(r => r.Rating) : 0,
+                    ReviewCount = b.Reviews.Count
+                })
+                .OrderByDescending(b => b.AverageRating)  // Order by highest average rating
+                .ToList();
+
+            return View(booksWithRatings);
+        }
+
+
+
+
+
     }
 }
 

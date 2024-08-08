@@ -4,7 +4,7 @@ namespace project.Models
 {
     public class Book
     {
-        public int Id { get; set; }
+        public int BookId { get; set; }
 
         [Required]
         public string Title { get; set; }
@@ -18,5 +18,18 @@ namespace project.Models
         public DateTime PublishedDate { get; set; }
 
         public string PhotoUrl { get; set; }
+
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+
+        public double AverageRating
+        {
+            get
+            {
+                return Reviews.Any() ? Reviews.Average(r => r.Rating) : 0;
+            }
+        }
+
+        public int ReviewCount => Reviews.Count;
     }
 }

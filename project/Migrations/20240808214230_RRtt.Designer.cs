@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using project.Models.Data;
 
@@ -11,9 +12,11 @@ using project.Models.Data;
 namespace project.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240808214230_RRtt")]
+    partial class RRtt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -273,15 +276,9 @@ namespace project.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BookId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Reviews");
                 });
@@ -368,25 +365,12 @@ namespace project.Migrations
             modelBuilder.Entity("project.Models.Review", b =>
                 {
                     b.HasOne("project.Models.Book", "Book")
-                        .WithMany("Reviews")
+                        .WithMany()
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("project.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Book");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("project.Models.Book", b =>
-                {
-                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }

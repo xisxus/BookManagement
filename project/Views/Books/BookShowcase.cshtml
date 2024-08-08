@@ -1,0 +1,32 @@
+﻿@model IEnumerable<BookViewModel>
+@{
+    ViewData["Title"] = "BookShowcase";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div class="container">
+    <h2>Book Showcase</h2>
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <img src="@item.Book.PhotoUrl"  height="100"/>
+                        <h5 class="card-title">@item.Book.Title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">by @item.Book.Author</h6>
+                        <p class="card-text">Average Rating: @item.AverageRating.ToString("0.0")</p>
+                        <p class="card-text">Number of Reviews: @item.ReviewCount</p>
+                        <p class="card-text">Published Date: @item.Book.PublishedDate.ToShortDateString()</p>
+                        <a href="@Url.Action("ReviewRating", "Books", new { bookId = item.Book.BookId })" class="btn btn-primary">View Reviews</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+
+
