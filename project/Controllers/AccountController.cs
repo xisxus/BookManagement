@@ -5,172 +5,156 @@ using project.Models;
 
 namespace project.Controllers
 {
-    public class AccountController : Controller
-    {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+	public class AccountController : Controller
+	{
+		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly SignInManager<ApplicationUser> _signInManager;
+		private readonly RoleManager<IdentityRole> _roleManager;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _roleManager = roleManager;
-        }
-        [HttpPost]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
-        }
-        public IActionResult Login()
-        {
-            return View();
-        }
+		public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
+		{
+			_userManager = userManager;
+			_signInManager = signInManager;
+			_roleManager = roleManager;
+		}
 
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
-        {
-            if (ModelState.IsValid)
-            {
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
-                if (result.Succeeded)
-                {
-                    // Redirect to returnUrl if it is local, otherwise to the home index
-                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                    {
-                        return Redirect(returnUrl);
-                    }
-                    else
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return View(model);
-                }
-            }
-            return View(model);
-        }
-        public IActionResult Registration()
-        {
-            return View();
-        }
+		[HttpPost]
+		public async Task<IActionResult> Logout()
+		{
+			await _signInManager.SignOutAsync();
+			return RedirectToAction("Index", "Home");
+		}
+
+		public IActionResult Login()
+		{
+			return PartialView("_LoginPartial", new LoginViewModel()); 
+		}
 
 
 
-        [HttpPost]
-        public async Task<IActionResult> Registration(RegisterViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                // Change from IdentityUser to ApplicationUser
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                var result = await _userManager.CreateAsync(user, model.Password);
+		[HttpPost]
+		public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
+		{
+			if (ModelState.IsValid)
+			{
+				var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+				if (result.Succeeded)
+				{
+					return Json(new { redirect = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action("Index", "Home") });
+				}
+				else
+				{
+					ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+				}
+			}
+			return PartialView("_LoginPartial", model);
+		}
 
-                if (result.Succeeded)
-                {
-                    // Assign role to user
-                    if (!await _roleManager.RoleExistsAsync("User"))
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole("User"));
-                    }
+		public IActionResult Registration()
+		{
+			return PartialView("_RegistrationPartial", new RegisterViewModel()); // Return empty model for initial load
+		}
 
-                    await _userManager.AddToRoleAsync(user, "User");
+		[HttpPost]
+		public async Task<IActionResult> Registration(RegisterViewModel model)
+		{
+			if (ModelState.IsValid)
+			{
+				var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+				var result = await _userManager.CreateAsync(user, model.Password);
 
-                    // Sign in user after registration if needed
-                    // await _signInManager.SignInAsync(user, isPersistent: false);
+				if (result.Succeeded)
+				{
+					if (!await _roleManager.RoleExistsAsync("User"))
+					{
+						await _roleManager.CreateAsync(new IdentityRole("User"));
+					}
 
-                    return RedirectToAction("Login", "Account");
-                }
+					await _userManager.AddToRoleAsync(user, "User");
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
+					return Json(new { redirect = Url.Action("Login", "Account") });
+				}
 
-            return View(model);
-        }
+				foreach (var error in result.Errors)
+				{
+					ModelState.AddModelError(string.Empty, error.Description);
+				}
+			}
+			return PartialView("_RegistrationPartial", model);
+		}
 
+		[HttpGet]
+		public IActionResult AssignRole()
+		{
+			var users = _userManager.Users.ToList();
+			return View(users);
+		}
 
-        [HttpGet]
-        public IActionResult AssignRole()
-        {
-            var users = _userManager.Users.ToList();
-            return View(users);
-        }
+		[HttpPost]
+		public async Task<IActionResult> AssignRole(string userId, string roleName)
+		{
+			var user = await _userManager.FindByIdAsync(userId);
 
-        [HttpPost]
-        public async Task<IActionResult> AssignRole(string userId, string roleName)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				ViewBag.ErrorMessage = $"User with Id = {userId} cannot be found";
+				return View("NotFound");
+			}
 
-            if (user == null)
-            {
-                ViewBag.ErrorMessage = $"User with Id = {userId} cannot be found";
-                return View("NotFound");
-            }
+			var roleExists = await _roleManager.RoleExistsAsync(roleName);
 
-            var roleExists = await _roleManager.RoleExistsAsync(roleName);
+			if (!roleExists)
+			{
+				ViewBag.ErrorMessage = $"Role with Name = {roleName} cannot be found";
+				return View("NotFound");
+			}
 
-            if (!roleExists)
-            {
-                ViewBag.ErrorMessage = $"Role with Name = {roleName} cannot be found";
-                return View("NotFound");
-            }
+			var isInRole = await _userManager.IsInRoleAsync(user, roleName);
 
-            var isInRole = await _userManager.IsInRoleAsync(user, roleName);
+			if (!isInRole)
+			{
+				var result = await _userManager.AddToRoleAsync(user, roleName);
 
-            if (!isInRole)
-            {
-                var result = await _userManager.AddToRoleAsync(user, roleName);
+				if (result.Succeeded)
+				{
+					return RedirectToAction("Index", "Home");
+				}
 
-                if (result.Succeeded)
-                {
-                    // Redirect to user details page or another appropriate page
-                    return RedirectToAction("Index", "Home");
-                }
+				foreach (var error in result.Errors)
+				{
+					ModelState.AddModelError(string.Empty, error.Description);
+				}
+			}
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
+			return RedirectToAction("Index", "Home");
+		}
 
-            return RedirectToAction("Index", "Home"); // Redirect to home page on success
-        }
+		public async Task<IActionResult> UsersWithRoles()
+		{
+			var usersWithRoles = new List<UserWithRolesViewModel>();
 
+			var users = _userManager.Users.ToList();
 
-        public async Task<IActionResult> UsersWithRoles()
-        {
-            var usersWithRoles = new List<UserWithRolesViewModel>();
+			foreach (var user in users)
+			{
+				var roles = await _userManager.GetRolesAsync(user);
 
-            var users = _userManager.Users.ToList();
+				var userWithRoles = new UserWithRolesViewModel
+				{
+					UserId = user.Id,
+					UserName = user.UserName,
+					Roles = roles.ToList()
+				};
 
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
+				usersWithRoles.Add(userWithRoles);
+			}
 
-                var userWithRoles = new UserWithRolesViewModel
-                {
-                    UserId = user.Id,
-                    UserName = user.UserName,
-                    Roles = roles.ToList()
-                };
+			return View(usersWithRoles);
+		}
 
-                usersWithRoles.Add(userWithRoles);
-            }
-
-            return View(usersWithRoles);
-        }
-
-
-        public IActionResult AccessDenied()
-        {
-            return View();
-        }
-    }
+		public IActionResult AccessDenied()
+		{
+			return View();
+		}
+	}
 }
