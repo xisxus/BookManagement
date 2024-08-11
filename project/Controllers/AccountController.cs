@@ -25,32 +25,51 @@ namespace project.Controllers
 			return RedirectToAction("Index", "Home");
 		}
 
-		public IActionResult Login()
-		{
-			return PartialView("_LoginPartial", new LoginViewModel()); 
-		}
+
+     
 
 
 
-		[HttpPost]
-		public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
-		{
-			if (ModelState.IsValid)
-			{
-				var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
-				if (result.Succeeded)
-				{
-					return Json(new { redirect = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action("Index", "Home") });
-				}
-				else
-				{
-					ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-				}
-			}
-			return PartialView("_LoginPartial", model);
-		}
 
-		public IActionResult Registration()
+
+        //[HttpGet]
+        //public IActionResult Login(string? returnUrl = null)
+        //{
+        //    ViewData["ReturnUrl"] = returnUrl;
+        //    return PartialView("_LoginPartial");
+        //}
+
+
+
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+                if (result.Succeeded)
+                {
+                    // Redirect to the returnUrl if it's valid, otherwise to the default page
+                    var redirectUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action("Index", "Home");
+                    return Json(new { redirect = redirectUrl });
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                }
+            }
+
+            // Return the partial view with the model to show validation errors
+            return PartialView("_LoginPartial", model);
+        }
+
+
+
+        public IActionResult Registration()
 		{
 			return PartialView("_RegistrationPartial", new RegisterViewModel()); // Return empty model for initial load
 		}
