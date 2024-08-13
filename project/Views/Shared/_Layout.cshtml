@@ -76,8 +76,29 @@
                     <li><a href="#"><i class="fa fa-map-marker"></i> 1734 Stonecoal Road</a></li>
                 </ul>
                 <ul class="header-links pull-right">
-                    <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
-                    <li><a href="#"><i class="fa fa-user-o"></i> My Account</a></li>
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <li class="nav-item">
+                            <form method="post" asp-controller="Account" asp-action="Logout" class="nav-link">
+                                <button type="submit" class="btn btn-link">Logout @User.Identity.Name</button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a href="#" data-toggle="modal" data-target="#loginModal" class="nav-link">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" data-toggle="modal" data-target="#registrationModal" class="nav-link">Register</a>
+                        </li>
+                    }
+
+
+
+                    @* <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
+                    <li><a href="#"><i class="fa fa-user-o"></i> My Account</a></li> *@
                 </ul>
             </div>
         </div>
@@ -180,23 +201,7 @@
                     <li><a href="@Url.Action("Index", "Books")">Books</a></li>
                     <li><a href="#">Categories</a></li>
                     <li><a href="@Url.Action("BookShowcase", "Books")">BooksShow</a></li>
-                    @if (SignInManager.IsSignedIn(User))
-                    {
-                        <li class="nav-item">
-                            <form method="post" asp-controller="Account" asp-action="Logout" class="nav-link">
-                                <button type="submit" class="btn btn-link">Logout @User.Identity.Name</button>
-                            </form>
-                        </li>
-                    }
-                    else
-                    {
-                        <li class="nav-item">
-                            <a href="#" data-toggle="modal" data-target="#loginModal" class="nav-link">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" data-toggle="modal" data-target="#registrationModal" class="nav-link">Register</a>
-                        </li>
-                    }
+                    
                     <li><a href="#">Smartphones</a></li>
                     <li><a href="#">Cameras</a></li>
                     <li><a href="#">Accessories</a></li>

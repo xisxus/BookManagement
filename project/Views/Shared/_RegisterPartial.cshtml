@@ -1,6 +1,6 @@
 ﻿@model RegisterViewModel
 
-<form id="registrationForm" asp-controller="Account" asp-action="Register" method="post">
+<form id="registrationForm" asp-controller="Account" asp-action="Registration" method="post">
     <div class="form-group">
         <label asp-for="Email"></label>
         <input asp-for="Email" class="form-control" />
@@ -25,3 +25,30 @@
         </p>
     </div>
 </form>
+
+
+@section Scripts {
+    <script src="~/jquery/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#registrationForm').submit(function (event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                $.ajax({
+                    type: 'POST',
+                    url: $(this).attr('action'),
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle errors if needed
+                        alert('An error occurred: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+}

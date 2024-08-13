@@ -91,15 +91,18 @@ namespace project.Controllers
 
 					await _userManager.AddToRoleAsync(user, "User");
 
-					return Json(new { redirect = Url.Action("Login", "Account") });
-				}
+                    //return Json(new { redirect = Url.Action("Login", "Account") });
+
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    return RedirectToAction("Index", "Home");
+                }
 
 				foreach (var error in result.Errors)
 				{
 					ModelState.AddModelError(string.Empty, error.Description);
 				}
 			}
-			return PartialView("_RegistrationPartial", model);
+			return View("_RegistrationPartial", model);
 		}
 
 		[HttpGet]
